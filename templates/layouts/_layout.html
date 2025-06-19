@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock title %} - ChatApp</title>
+    <link rel="stylesheet" href="{% static '/css/output.css' %}">
+    <style>
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            z-index: 9999;
+            transform: translateX(150%);
+            transition: transform 0.3s ease-in-out;
+            max-width: 350px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background-color: #f0fdf4;
+            color: #166534;
+            border-left: 4px solid #22c55e;
+        }
+        
+        .notification.error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .notification.warning {
+            background-color: #fffbeb;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .notification.info {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .notification-icon {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+        
+        .close-notification {
+            margin-left: auto;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: inherit;
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification container -->
+    <div id="notification-container"></div>
+    
+    {% block content %}{% endblock content %}
+    
+    <script>
+        // Function to show notification
+        function showNotification(message, type='info') {
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ⓘ'
+            };
+            
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span class="notification-icon">${icons[type]}</span>
+                <span>${message}</span>
+                <button class="close-notification" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Trigger the show animation
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 5000);
+        }
+        
+        // Display Django messages if they exist
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if messages %}
+                {% for message in messages %}
+                    showNotification('{{ message|escapejs }}', '{{ message.tags }}');
+                {% endfor %}
+            {% endif %}
+        });
+        
+        // Make function available globally for AJAX calls etc.
+        window.showNotification = showNotification;
+    </script>
+</body>
+</html>
