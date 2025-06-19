@@ -17,5 +17,9 @@
   "bugs": {
     "url": "https://github.com/brizzieh/ChatAppv2/issues"
   },
-  "homepage": "https://github.com/brizzieh/ChatAppv2#readme"
+  "homepage": "https://github.com/brizzieh/ChatAppv2#readme",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.10",
+    "tailwindcss": "^4.1.10"
+  }
 }

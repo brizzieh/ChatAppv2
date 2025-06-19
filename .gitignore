@@ -86,3 +86,7 @@ Pipfile.lock
 
 # Docker
 *.pid
+
+# npm
+node_modules/
+package-lock.json
