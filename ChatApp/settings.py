@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     # Local apps
     'authentication',
     'app',
+    'userProfile',
 ]
 
 MIDDLEWARE = [
