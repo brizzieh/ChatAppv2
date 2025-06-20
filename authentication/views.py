@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.contrib import messages
 
@@ -14,9 +14,17 @@ def register_view(request):
             return redirect('register')
 
         try:
+            if User.objects.filter(username=username).exists():
+                messages.error(request, "Username already exists.")
+                return redirect('register')
+            
+            if len(password) < 8:
+                messages.error(request, "Password must be at least 8 characters long.")
+                return redirect('register')
+            
             user = User.objects.create_user(username=username, password=password)
             user.save()
-            messages.success(request, "Registration successful! Please login.")
+            messages.success(request, "Registration successful! You can now log in.")
             return redirect('login')
         except Exception as e:
             messages.error(request, f"Registration failed: {str(e)}")
@@ -30,7 +38,6 @@ def login_view(request):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         
-        print(f"Attempting to log in user: {username} {password}")  # Debugging line
         if user is not None:
             login(request, user)
             messages.success(request, f"Welcome back, {username}!")
@@ -40,11 +47,3 @@ def login_view(request):
             return redirect('login')
             
     return render(request, 'auth/login.html')
-
-def logout_view(request):
-    if request.method == 'POST':
-        username = request.user.username
-        logout(request)
-        messages.success(request, f"You've been logged out. See you soon, {username}!")
-        return redirect('login')
-    return render(request, 'auth/logout.html')
