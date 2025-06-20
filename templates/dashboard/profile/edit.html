@@ -1,0 +1,199 @@
+{% extends "layouts/_base.html" %}
+{% block title %}Edit Profile{% endblock title %}
+
+{% block content %}
+<div class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">Edit Profile</h1>
+            <p class="text-gray-600">Manage your account settings</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="flex space-x-8">
+                <button type="button" data-tab="personal-info" 
+                   class="tab-link border-b-2 border-blue-500 text-blue-600 px-1 py-4 text-sm font-medium">
+                    Personal Info
+                </button>
+                <button type="button" data-tab="security" 
+                   class="tab-link border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-4 text-sm font-medium">
+                    Security
+                </button>
+            </nav>
+        </div>
+
+        <!-- Personal Info Tab -->
+        <div id="personal-info" class="tab-content">
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="personal_info">
+
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-6">Basic Information</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Avatar Upload -->
+                        <div class="col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+                            <div class="flex items-center space-x-4">
+                                <div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
+                                    {% if user.profile.avatar %}
+                                        <img src="{{ user.profile.avatar.url }}" id="avatar-preview" class="h-full w-full object-cover">
+                                    {% else %}
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="avatar-default">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <input type="file" id="avatar" name="avatar" accept="image/*" class="hidden" onchange="previewAvatar(this)">
+                                    <label for="avatar" class="cursor-pointer px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Change
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">JPG, GIF or PNG. Max 2MB.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div>
+                            <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                            <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                            <input type="email" id="email" name="email" value="{{ user.email }}"
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label for="bio" class="block text-sm font-medium text-gray-700">Bio</label>
+                            <textarea id="bio" name="bio" rows="3"
+                                      class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">{% if user.profile.bio %}{{ user.profile.bio }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Security Tab -->
+        <div id="security" class="tab-content hidden">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="security">
+
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-6">Change Password</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="old_password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                            <input type="password" id="old_password" name="old_password" 
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                        </div>
+                        
+                        <div>
+                            <label for="new_password1" class="block text-sm font-medium text-gray-700">New Password</label>
+                            <input type="password" id="new_password1" name="new_password1" 
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Your password must be at least 8 characters long.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="new_password2" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                            <input type="password" id="new_password2" name="new_password2" 
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching functionality
+    const tabs = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const target = this.getAttribute('data-tab');
+            
+            // Update active tab
+            tabs.forEach(t => {
+                t.classList.remove('border-blue-500', 'text-blue-600');
+                t.classList.add('border-transparent', 'text-gray-500');
+            });
+            this.classList.remove('border-transparent', 'text-gray-500');
+            this.classList.add('border-blue-500', 'text-blue-600');
+            
+            // Show target content
+            tabContents.forEach(content => content.classList.add('hidden'));
+            document.getElementById(target).classList.remove('hidden');
+        });
+    });
+    
+    // Initialize first tab as active
+    tabs[0].classList.add('border-blue-500', 'text-blue-600');
+    tabs[0].classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById('personal-info').classList.remove('hidden');
+});
+
+function previewAvatar(input) {
+    const preview = document.getElementById('avatar-preview');
+    const defaultIcon = document.getElementById('avatar-default');
+    const file = input.files[0];
+    const reader = new FileReader();
+
+    if (file) {
+        reader.onload = function(e) {
+            if (!preview) {
+                // Create preview element if it doesn't exist
+                const avatarContainer = input.closest('.flex').querySelector('.rounded-full');
+                const newPreview = document.createElement('img');
+                newPreview.id = 'avatar-preview';
+                newPreview.className = 'h-full w-full object-cover';
+                newPreview.src = e.target.result;
+                avatarContainer.innerHTML = '';
+                avatarContainer.appendChild(newPreview);
+            } else {
+                preview.src = e.target.result;
+            }
+            
+            if (defaultIcon) {
+                defaultIcon.style.display = 'none';
+            }
+        };
+
+        reader.readAsDataURL(file);
+    }
+}
+</script>
+{% endblock %}
