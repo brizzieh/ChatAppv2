@@ -1,17 +1,21 @@
-"""
-Django settings for ChatApp project.
-"""
-
 from pathlib import Path
 import os
+import environ
 import pymysql
 pymysql.install_as_MySQLdb()
 
+
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-z%ggnrv=6n4e8l$%t)tjhoeas_t8_#8ynt$*lcii960prm2$6*'
-DEBUG = True
-ALLOWED_HOSTS = ['127.0.1', 'localhost', 'chatappv2.pythonanywhere.com']
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'), overwrite=True)
+
+SECRET_KEY = str(env('SECRET_KEY'))
+DEBUG = str(env('DEBUG'))
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 # Application definition
 INSTALLED_APPS = [
@@ -45,7 +49,9 @@ ROOT_URLCONF = 'ChatApp.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,11 +75,11 @@ LOGOUT_REDIRECT_URL = 'login'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'chatappv2',
-        'USER': 'root',
-        'PASSWORD': '', 
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': str(env('DB_NAME')),
+        'USER': str(env('DB_USER')),
+        'PASSWORD': str(env('DB_PASSWORD')), 
+        'HOST': str(env('DB_HOST')),
+        'PORT': int(env('DB_PORT')),
          'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
@@ -104,15 +110,15 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    os.path.join(BASE_DIR, 'static'),
 ]
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
