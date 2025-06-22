@@ -64,9 +64,10 @@
             {% for message in recent_messages %}
             <div class="p-6 hover:bg-gray-50 transition-colors">
                 <div class="flex items-start">
-                    <img src="{% if message.sender.profile.avatar.url %}{{ message.sender.profile.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ contact.get_full_name|default:contact.username }}&background=random{% endif %}" 
+                    <img src="https://ui-avatars.com/api/?name={{ message.sender.get_full_name|default:message.sender.username }}&background=random" 
                          alt="{{ message.sender.username }}" 
                          class="h-10 w-10 rounded-full object-cover mr-3">
+                         
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-start">
                             <h3 class="text-sm font-medium text-gray-900 truncate">
