@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'authentication',
     'app',
     'userProfile',
+    'chat',
 ]
 
 MIDDLEWARE = [
