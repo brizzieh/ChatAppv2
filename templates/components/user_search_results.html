@@ -1,0 +1,35 @@
+<div class="divide-y divide-gray-100 overflow-y-auto max-h-[calc(100%-60px)]">
+    {% if users %}
+        {% for user in users %}
+        <a href="{% url 'chat:start_conversation' user.id %}" 
+           class="block p-4 hover:bg-gray-50 transition duration-150">
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center overflow-hidden">
+                    {% if user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" class="h-full w-full object-cover">
+                    {% else %}
+                        <span class="text-blue-600 font-medium">{{ user.first_name|first|default:user.username|first|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-gray-900 truncate">
+                        {{ user.get_full_name|default:user.username }}
+                    </p>
+                    <p class="text-sm text-gray-500 truncate">
+                        @{{ user.username }}
+                    </p>
+                </div>
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    {% else %}
+        <div class="p-4 text-center text-gray-500">
+            No users found matching "{{ request.GET.q }}"
+        </div>
+    {% endif %}
+</div>
