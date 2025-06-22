@@ -1,0 +1,1031 @@
+{% extends "layouts/_base.html" %}
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-12">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
+        <div class="space-y-3">
+            <h1 class="text-4xl font-bold text-gray-900">
+                Messages
+            </h1>
+            <p class="text-lg text-gray-600 ">
+                Connect with your team and collaborators
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            <button id="new-message-btn" class="inline-flex items-center px-4 py-2.5 bg-blue-600 rounded-lg text-white bg-gradient-to-r  transition-all duration-300 shadow-md hover:shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Message
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Conversations List -->
+        <div class="lg:col-span-1 bg-white/70  backdrop-blur-lg rounded-2xl p-6 border border-gray-200  shadow-sm hover:shadow-md transition-all duration-300 h-[calc(100vh-220px)] overflow-hidden flex flex-col">
+            <div class="relative mb-4">
+                <input type="text" id="search-conversations" placeholder="Search conversations..." 
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/80  border border-gray-300/70  focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <div id="search-loading" class="search-loading hidden">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            
+            <div id="conversations-container" class="flex-1 overflow-y-auto custom-scroll">
+                {% for participant in participants %}
+                    <div class="conversation-item p-3 rounded-lg hover:bg-gray-100  cursor-pointer transition-colors flex items-center mb-2" data-user-id="{{ participant.id }}">
+                        <div class="relative mr-3">
+                            <img src="https://ui-avatars.com/api/?name={{ participant.full_name|default:participant.username }}&background=random" 
+                                alt="{{ participant.username }}" 
+                                class="w-10 h-10 rounded-full object-cover">
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white "></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-gray-900  truncate">{{ participant.full_name|default:participant.username }}</h4>
+                            <p class="text-sm text-gray-500  truncate">
+                                {% if participant.last_message %}
+                                    {{ participant.last_message.content|truncatechars:30 }}
+                                {% else %}
+                                    No messages yet
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="ml-2 flex flex-col items-end">
+                            {% if participant.last_message %}
+                                <span class="text-xs text-gray-400  whitespace-nowrap">
+                                    {{ participant.last_message.timestamp|timesince }} ago
+                                </span>
+                                {% if participant.last_message.sender != request.user and not participant.last_message.is_read %}
+                                    <span class="mt-1 w-2.5 h-2.5 bg-indigo-500 rounded-full"></span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500 ">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-300 " fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <p>No conversations yet</p>
+                        <p class="text-sm mt-2">Start a conversation with someone!</p>
+                    </div>
+                    {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Chat Area -->
+        <div class="lg:col-span-3 bg-white/70  backdrop-blur-lg rounded-2xl border border-gray-200  shadow-sm hover:shadow-md transition-all duration-300 h-[calc(100vh-220px)] overflow-hidden flex flex-col">
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-gray-200  flex items-center">
+                <div class="flex items-center">
+                    <img id="chat-user-avatar" src="" alt="" class="w-10 h-10 rounded-full mr-3">
+                    <div>
+                        <h4 id="chat-user-name" class="font-medium text-gray-900 "></h4>
+                        <p id="chat-user-status" class="text-xs text-gray-500  flex items-center">
+                            <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                            <span>Online</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="ml-auto flex space-x-3">
+                    <button class="p-2 rounded-md text-gray-500  hover:bg-gray-100  transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                    </button>
+                    <button class="p-2 rounded-md text-gray-500  hover:bg-gray-100  transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                    <button class="p-2 rounded-md text-gray-500  hover:bg-gray-100  transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Messages Container -->
+            <div id="messages-container" class="flex-1 overflow-y-auto p-6 custom-scroll bg-gray-50/50 ">
+                <div class="text-center py-8 text-gray-500 ">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-300 " fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <p>Select a conversation to start chatting</p>
+                </div>
+            </div>
+            
+            <!-- Message Input -->
+            <div class="p-4 border-t border-gray-200  bg-white/80  backdrop-blur-sm">
+                <div class="relative">
+                    <input id="message-input" type="text" placeholder="Type a message..." 
+                           class="w-full  pl-4 pr-20 py-3 rounded-xl bg-white  border border-gray-300  focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                    <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
+                        <button id="emoji-picker" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600  hover:bg-gray-100  transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <button id="send-message" class="p-1.5 rounded-md text-indigo-600  hover:text-indigo-700  hover:bg-gray-100  transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Message Modal -->
+<div id="new-message-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 bg-opacity-50 hidden">
+    <div class="bg-white  rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl transform transition-all">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900 ">New Message</h3>
+            <button id="close-new-message-modal" class="text-gray-400 hover:text-gray-500 ">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div class="relative mb-4">
+            <input type="text" id="search-users" placeholder="Search users..." 
+                   class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/80  border border-gray-300/70  focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <div id="user-search-loading" class="search-loading hidden">
+                <div class="spinner"></div>
+            </div>
+        </div>
+        
+        <div id="users-list" class="space-y-3 max-h-96 overflow-y-auto custom-scroll">
+            {% for user in all_users %}
+            <div class="user-item p-3 rounded-lg hover:bg-gray-100  cursor-pointer transition-colors flex items-center" data-user-id="{{ user.id }}">
+                <div class="relative mr-3">
+                    <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=random" 
+                         alt="{{ user.username }}" 
+                         class="w-10 h-10 rounded-full object-cover">
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white "></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-medium text-gray-900  truncate">{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="text-sm text-gray-500  truncate">{{ user.email }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom scrollbar */
+    .custom-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    }
+    
+    .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    
+    .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+    }
+    
+    .custom-scroll::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
+    }
+    
+    
+    /* Message animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message-item {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    /* Search loading indicator */
+    .search-loading {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    
+    .search-loading .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(156, 163, 175, 0.3);
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Typing indicator */
+    .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .typing-indicator span {
+        height: 8px;
+        width: 8px;
+        background-color: #9CA3AF;
+        border-radius: 50%;
+        display: inline-block;
+        margin: 0 2px;
+        animation: bounce 1.5s infinite ease-in-out;
+    }
+    
+    .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes bounce {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-5px); }
+    }
+    
+    /* Message status indicators */
+    .message-status {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 4px;
+    }
+    
+    .message-status svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .message-temporary {
+        opacity: 0.8;
+        transform: translateY(5px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .message-failed {
+        opacity: 0.6;
+        border-left: 3px solid #ef4444;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+
+    .animate-pulse {
+        animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // DOM elements
+    const newMessageBtn = document.getElementById('new-message-btn');
+    const newMessageModal = document.getElementById('new-message-modal');
+    const closeNewMessageModal = document.getElementById('close-new-message-modal');
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    const messagesContainer = document.getElementById('messages-container');
+    const chatUserName = document.getElementById('chat-user-name');
+    const chatUserAvatar = document.getElementById('chat-user-avatar');
+    const messageInput = document.getElementById('message-input');
+    const sendMessageBtn = document.getElementById('send-message');
+    const searchUsersInput = document.getElementById('search-users');
+    const usersList = document.getElementById('users-list');
+
+    let currentChatUserId = null;
+    let isTyping = false;
+    let typingTimeout = null;
+    let messageUpdateInterval = null;
+    let lastMessageId = null;
+    const pendingMessages = new Map(); // For tracking temporary messages
+    let isSending = false; // Flag to prevent duplicate sends
+
+    // New message modal
+    newMessageBtn.addEventListener('click', function() {
+        newMessageModal.classList.remove('hidden');
+        document.getElementById('search-users').focus();
+    });
+
+    closeNewMessageModal.addEventListener('click', function() {
+        newMessageModal.classList.add('hidden');
+    });
+
+    newMessageModal.addEventListener('click', function(e) {
+        if (e.target === newMessageModal) {
+            newMessageModal.classList.add('hidden');
+        }
+    });
+
+    // Conversation item click handler
+    conversationItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            currentChatUserId = userId;
+
+            // Highlight selected conversation
+            document.querySelectorAll('.conversation-item').forEach(i => {
+                i.classList.remove('bg-gray-100', 'bg-gray-100');
+            });
+            this.classList.add('bg-gray-100', 'bg-gray-100');
+
+            // Fetch messages for this user
+            fetchMessages(userId);
+        });
+    });
+
+    // Search users in new message modal
+    if (searchUsersInput) {
+        searchUsersInput.addEventListener('input', debounce(function(e) {
+            const query = e.target.value.trim();
+            const loadingIndicator = document.getElementById('user-search-loading');
+
+            if (query.length < 2) {
+                document.querySelectorAll('.user-item').forEach(item => {
+                    item.style.display = 'flex';
+                });
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden');
+
+            fetch(`/chat/search-users/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const userItems = document.querySelectorAll('.user-item');
+                    const userIds = data.users.map(user => user.id.toString());
+
+                    userItems.forEach(item => {
+                        if (userIds.includes(item.getAttribute('data-user-id'))) {
+                            item.style.display = 'flex';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error searching users:', error);
+                })
+                .finally(() => {
+                    loadingIndicator.classList.add('hidden');
+                });
+        }, 500));
+    }
+
+    // Handle user selection in new message modal
+    if (usersList) {
+        usersList.addEventListener('click', function(e) {
+            const userItem = e.target.closest('.user-item');
+            if (userItem) {
+                const userId = userItem.getAttribute('data-user-id');
+                newMessageModal.classList.add('hidden');
+
+                const conversationItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+                if (conversationItem) {
+                    conversationItem.click();
+                } else {
+                    currentChatUserId = userId;
+                    fetchMessages(userId);
+
+                    const username = userItem.querySelector('h4').textContent;
+
+                    const newConversation = document.createElement('div');
+                    newConversation.className = 'conversation-item p-3 rounded-lg hover:bg-gray-100  cursor-pointer transition-colors flex items-center mb-2 bg-gray-100 ';
+                    newConversation.setAttribute('data-user-id', userId);
+                    newConversation.innerHTML = `
+                        <div class="relative mr-3">
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random" 
+                                 alt="${username}" 
+                                 class="w-10 h-10 rounded-full object-cover">
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white "></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-gray-900  truncate">${username}</h4>
+                            <p class="text-sm text-gray-500  truncate">New conversation</p>
+                        </div>
+                    `;
+
+                    newConversation.addEventListener('click', function() {
+                        currentChatUserId = userId;
+                        fetchMessages(userId);
+
+                        document.querySelectorAll('.conversation-item').forEach(i => {
+                            i.classList.remove('bg-gray-100', '');
+                        });
+                        this.classList.add('bg-gray-100', '');
+                    });
+
+                    document.getElementById('conversations-container').prepend(newConversation);
+                }
+            }
+        });
+    }
+
+    // Send message function with optimistic UI updates
+    function sendMessage() {
+        const content = messageInput?.value?.trim();
+        if (!content || !currentChatUserId || isSending) return;
+
+        isSending = true;
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+        // Check for duplicate pending messages
+        if (Array.from(pendingMessages.values()).some(msg => msg.content === content)) {
+            isSending = false;
+            return;
+        }
+
+        // Create temporary message object
+        const tempMessage = {
+            id: tempId,
+            content: content,
+            timestamp: new Date().toISOString(),
+            is_me: true,
+            is_read: false,
+            is_temp: true,
+        };
+
+        pendingMessages.set(tempId, tempMessage);
+        appendMessage(tempMessage);
+        if (messageInput) messageInput.value = '';
+        scrollToBottom();
+
+        fetch('send/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                recipient_id: currentChatUserId,
+                content: content,
+                temp_id: tempId
+            }),
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (!data || !data.message_id) {
+                throw new Error('Server response missing required fields');
+            }
+            handleMessageConfirmation(tempId, data.timestamp, data.message_id);
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            markMessageAsFailed(tempId);
+        })
+        .finally(() => {
+            isSending = false;
+        });
+    }
+
+    // Handle message confirmation from server
+    function handleMessageConfirmation(tempId, timestamp, messageId) {
+        const tempMessage = pendingMessages.get(tempId);
+        if (!tempMessage) return;
+
+        const tempElement = document.querySelector(`[data-message-id="${tempId}"]`);
+        if (tempElement) {
+            // Update the DOM element with the permanent ID
+            tempElement.setAttribute('data-message-id', messageId);
+            tempElement.classList.remove('message-temporary');
+
+            // Update timestamp if available
+            if (timestamp) {
+                const timestampElement = tempElement.querySelector('.message-timestamp');
+                if (timestampElement) {
+                    timestampElement.textContent = formatTime(timestamp);
+                }
+            }
+
+            // Update status icon
+            const statusIcon = tempElement.querySelector('.message-status');
+            if (statusIcon) {
+                statusIcon.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-blue-300" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                `;
+            }
+        }
+
+        pendingMessages.delete(tempId);
+        lastMessageId = messageId;
+    }
+
+    // Mark message as failed in UI
+    function markMessageAsFailed(messageId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            messageElement.classList.add('message-failed');
+            const statusIcon = messageElement.querySelector('.message-status');
+            if (statusIcon) {
+                statusIcon.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                `;
+            }
+
+            // Add retry button
+            const retryButton = document.createElement('button');
+            retryButton.className = 'ml-2 text-xs text-red-500 hover:text-red-700';
+            retryButton.textContent = 'Retry';
+            retryButton.addEventListener('click', function() {
+                const tempId = messageId.replace('temp-', '');
+                const tempMessage = pendingMessages.get(tempId);
+                if (tempMessage) {
+                    messageElement.remove();
+                    sendMessage(tempMessage.content);
+                }
+            });
+
+            const statusContainer = messageElement.querySelector('.message-status-container');
+            if (statusContainer) {
+                statusContainer.appendChild(retryButton);
+            }
+        }
+    }
+
+    // Update event listeners to prevent duplicate sends
+    sendMessageBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // Typing indicator
+    messageInput.addEventListener('input', function() {
+        if (!isTyping && currentChatUserId) {
+            isTyping = true;
+            sendTypingIndicator(true);
+        }
+
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            isTyping = false;
+            sendTypingIndicator(false);
+        }, 2000);
+    });
+
+    function sendTypingIndicator(isTyping) {
+        fetch('typing/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                recipient_id: currentChatUserId,
+                is_typing: isTyping,
+            }),
+        }).catch(error => {
+            console.error('Error sending typing indicator:', error);
+        });
+    }
+
+    // Check for typing indicators
+    function checkTypingIndicators() {
+        if (currentChatUserId) {
+            fetch(`typing-status/?user_id=${currentChatUserId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.is_typing) {
+                        showTypingIndicator();
+                    } else {
+                        hideTypingIndicator();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking typing status:', error);
+                });
+        }
+    }
+
+    function showTypingIndicator() {
+        let typingIndicator = document.getElementById('typing-indicator');
+        if (!typingIndicator) {
+            typingIndicator = document.createElement('div');
+            typingIndicator.id = 'typing-indicator';
+            typingIndicator.className = 'flex items-center mb-2 text-gray-500  text-sm';
+            typingIndicator.innerHTML = `
+                <div class="typing-indicator mr-2">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                Typing...
+            `;
+            messagesContainer.appendChild(typingIndicator);
+            scrollToBottom();
+        }
+    }
+
+    function hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+
+    // Fetch messages for a user
+    function fetchMessages(userId) {
+        // Show loading state
+        messagesContainer.innerHTML = `
+            <div class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+                <p class="mt-2 text-gray-500 ">Loading messages...</p>
+            </div>
+        `;
+
+        fetch(`get/${userId}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load messages (status: ${response.status})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                currentChatUserId = data.other_user.id;
+                const displayName = data.other_user.full_name || data.other_user.username;
+                chatUserName.textContent = displayName;
+                chatUserAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+
+                renderMessages(data.messages);
+
+                // Update last message ID
+                if (data.messages.length > 0) {
+                    lastMessageId = data.messages[data.messages.length - 1].id;
+                }
+
+                // Start checking for new messages
+                startMessageUpdates();
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                messagesContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-500 ">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <p class="font-medium">${error.message}</p>
+                        <p class="text-sm mt-2">Failed to load messages. Please try again.</p>
+                    </div>
+                `;
+            });
+    }
+
+    // Render messages
+    function renderMessages(messages) {
+        // Preserve temporary messages
+        const tempMessages = Array.from(messagesContainer.querySelectorAll('[data-message-id^="temp-"]'));
+        messagesContainer.innerHTML = '';
+        
+        // Re-add temporary messages first
+        tempMessages.forEach(msg => messagesContainer.appendChild(msg));
+
+        if (!messages || messages.length === 0) {
+            if (tempMessages.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <p>No messages yet</p>
+                        <p class="text-sm mt-1">Start the conversation!</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        let lastDate = null;
+        const seenIds = new Set();
+
+        messages.forEach(message => {
+            // Skip invalid or duplicate messages
+            if (!message || !message.id || seenIds.has(message.id)) return;
+            seenIds.add(message.id);
+
+            // Date separator logic
+            const messageDate = message.timestamp ? new Date(message.timestamp).toLocaleDateString() : '';
+            if (messageDate && messageDate !== lastDate) {
+                lastDate = messageDate;
+                const dateElement = document.createElement('div');
+                dateElement.className = 'flex justify-center my-4';
+                dateElement.innerHTML = `
+                    <span class="px-3 py-1 text-xs text-gray-500 bg-gray-100 rounded-full">
+                        ${messageDate}
+                    </span>
+                `;
+                messagesContainer.appendChild(dateElement);
+            }
+
+            // Skip if this message is already displayed (including temporary versions)
+            const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+            if (!existingMessage) {
+                appendMessage(message);
+            }
+        });
+
+        scrollToBottom();
+    }
+
+    function appendMessage(message) {
+
+        // Validate input
+        if (!message || typeof message !== 'object') {
+            console.error('Invalid message object:', message);
+            return;
+        }
+
+        // Ensure message.id exists and is a string
+        const messageId = message.id ? String(message.id) : `temp-${Date.now()}`;
+
+        try {
+            // Safely remove existing message
+            const existingMessage = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (existingMessage && existingMessage.parentNode) {
+                existingMessage.remove();
+            }
+
+            // Create message container
+            const messageElement = document.createElement('div');
+            messageElement.className = `message-item flex ${
+                message.is_me ? 'justify-end' : 'justify-start'
+            } mb-4`;
+            messageElement.setAttribute('data-message-id', messageId);
+
+            if (message.is_temp) {
+                messageElement.classList.add('message-temporary');
+            }
+
+            // Status icon logic with safety checks
+            let statusIcon = '';
+            if (message.is_me) {
+                statusIcon = message.is_read
+                    ? `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    `
+                    : `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    `;
+            }
+
+            // Escape HTML in message content to prevent XSS
+            const safeContent = typeof message.content === 'string' 
+                ? message.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') 
+                : '';
+
+            // Format timestamp safely
+            const messageTime = formatTime(message.timestamp) || '';
+
+            // Text message template with safety checks
+            messageElement.innerHTML = `
+                <div class="max-w-xs lg:max-w-md ${
+                    message.is_me
+                        ? 'bg-indigo-500 text-white'
+                        : 'bg-gray-200  text-gray-800 '
+                } rounded-2xl px-4 py-2 ${
+                    message.is_me ? 'rounded-tr-none' : 'rounded-tl-none'
+                }">
+                    <div class="text-sm">${safeContent}</div>
+                    <div class="text-right mt-1 flex items-center justify-end">
+                        <span class="text-xs ${
+                            message.is_me
+                                ? 'text-indigo-200'
+                                : 'text-gray-500 '
+                        }">
+                            ${messageTime}
+                        </span>
+                        ${
+                            message.is_me
+                                ? `
+                                <span class="message-status-container flex items-center ml-1">
+                                    <span class="message-status">${statusIcon}</span>
+                                </span>
+                            `
+                                : ''
+                        }
+                    </div>
+                </div>
+            `;
+
+            // Safely append to container
+            if (messagesContainer) {
+                messagesContainer.appendChild(messageElement);
+            } else {
+                console.error('Messages container not found');
+                return;
+            }
+        } catch (error) {
+            console.error('Error appending message:', error);
+        }
+    }
+
+    // Helper function with safety checks
+    function formatTime(timestamp) {
+        if (!timestamp) return '';
+
+        try {
+            if (typeof timestamp === 'string' && timestamp.includes('T')) {
+                const date = new Date(timestamp);
+                return isNaN(date.getTime()) 
+                    ? '' 
+                    : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            return typeof timestamp === 'string' ? timestamp : '';
+        } catch (error) {
+            console.error('Error formatting timestamp:', error);
+            return '';
+        }
+    }
+
+    // Start periodic message updates
+    function startMessageUpdates() {
+        stopMessageUpdates(); // Clear any existing interval
+
+        // Check for new messages every 2 seconds
+        messageUpdateInterval = setInterval(() => {
+            if (currentChatUserId) {
+                checkForNewMessages();
+                checkTypingIndicators();
+            }
+        }, 2000);
+    }
+
+    // Stop periodic updates
+    function stopMessageUpdates() {
+        if (messageUpdateInterval) {
+            clearInterval(messageUpdateInterval);
+            messageUpdateInterval = null;
+        }
+    }
+
+    // Helper function to check scroll position
+    function isScrolledToBottom() {
+        if (!messagesContainer) return true;
+        return messagesContainer.scrollHeight - messagesContainer.clientHeight <= messagesContainer.scrollTop + 50;
+    }
+
+    // Check for new messages since lastMessageId
+    function checkForNewMessages() {
+        if (!currentChatUserId) return;
+
+        fetch(`updates/?user_id=${currentChatUserId}&last_id=${lastMessageId || ''}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data || !data.messages) {
+                    throw new Error('Invalid response format from server');
+                }
+
+                // Safely handle message filtering
+                const newMessages = data.messages.filter(message => {
+                    try {
+                        // Skip if message is invalid
+                        if (!message || !message.id) return false;
+
+                        // Convert ID to string if needed
+                        const messageId = String(message.id);
+
+                        // Skip if already displayed
+                        if (document.querySelector(`[data-message-id="${messageId}"]`)) {
+                            return false;
+                        }
+
+                        // Skip if this is a pending message we've already handled
+                        if (messageId.startsWith('temp-')) {
+                            const tempId = messageId.replace('temp-', '');
+                            return !pendingMessages.has(tempId);
+                        }
+
+                        return true;
+                    } catch (error) {
+                        console.error('Error processing message:', error);
+                        return false;
+                    }
+                });
+
+                // Safely append new messages
+                if (newMessages.length > 0) {
+                    newMessages.forEach(message => {
+                        try {
+                            appendMessage(message);
+                        } catch (error) {
+                            console.error('Error appending message:', error);
+                        }
+                    });
+
+                    // Update last message ID
+                    lastMessageId = String(newMessages[newMessages.length - 1].id);
+
+                    // Scroll to bottom if not actively scrolling
+                    if (messagesContainer && !messagesContainer.classList.contains('scrolling')) {
+                        scrollToBottom();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking for new messages:', error);
+            });
+    }
+
+    // Scroll to bottom of messages
+    function scrollToBottom() {
+        if (messagesContainer) {
+            messagesContainer.scrollTo({
+                top: messagesContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }
+
+    // Track if user is scrolling
+    if (messagesContainer) {
+        messagesContainer.addEventListener('scroll', function() {
+            messagesContainer.classList.add('scrolling');
+            clearTimeout(messagesContainer.scrollTimeout);
+            messagesContainer.scrollTimeout = setTimeout(() => {
+                messagesContainer.classList.remove('scrolling');
+            }, 1000);
+        });
+    }
+
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // Initialize with first conversation if available
+    if (conversationItems.length > 0) {
+        conversationItems[0].click();
+    }
+
+    // Connect to server when page loads
+    checkForNewMessages();
+});
+</script>
+{% endblock %}
