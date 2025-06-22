@@ -12,42 +12,81 @@ import json
 User = get_user_model()
 
 @login_required
+@login_required
 def chat_view(request):
-    # Get all conversations with last message and unread count
-    conversations = Message.objects.filter(
-        Q(sender=request.user) | Q(recipient=request.user)
-    )
-    # Annotate with last message timestamp
-    conversations = conversations.values('sender', 'recipient').annotate(
+    # Get all unique conversation partners
+    sent_conversations = Message.objects.filter(
+        sender=request.user
+    ).values('recipient').annotate(
         last_message=Max('timestamp')
-    ).order_by('-last_message')
+    )
     
+    received_conversations = Message.objects.filter(
+        recipient=request.user
+    ).values('sender').annotate(
+        last_message=Max('timestamp')
+    )
+    
+    # Combine and get unique participants
+    participant_ids = set()
     participants = []
-    for conv in conversations:
-        other_user_id = conv['recipient'] if conv['sender'] == request.user.id else conv['sender']
-        other_user = User.objects.get(id=other_user_id)
-        
-        last_message = Message.objects.filter(
-            Q(sender=request.user, recipient=other_user) |
-            Q(sender=other_user, recipient=request.user)
-        ).order_by('-timestamp').first()
-        
-        unread_count = Message.objects.filter(
-            sender=other_user,
-            recipient=request.user,
-            is_read=False
-        ).count()
-        
-        participants.append({
-            'id': other_user.id,
-            'username': other_user.username,
-            'full_name': other_user.get_full_name(),
-            'email': other_user.email,
-            'last_message': last_message,
-            'unread_count': unread_count
-        })
     
-    # Get all users for new message modal (excluding current user)
+    # Process sent messages
+    for conv in sent_conversations:
+        user_id = conv['recipient']
+        if user_id not in participant_ids:
+            participant_ids.add(user_id)
+            last_message = Message.objects.filter(
+                Q(sender=request.user, recipient_id=user_id) |
+                Q(sender_id=user_id, recipient=request.user)
+            ).order_by('-timestamp').first()
+            
+            other_user = User.objects.get(id=user_id)
+            unread_count = Message.objects.filter(
+                sender_id=user_id,
+                recipient=request.user,
+                is_read=False
+            ).count()
+            
+            participants.append({
+                'id': user_id,
+                'username': other_user.username,
+                'full_name': other_user.get_full_name(),
+                'email': other_user.email,
+                'last_message': last_message,
+                'unread_count': unread_count
+            })
+    
+    # Process received messages
+    for conv in received_conversations:
+        user_id = conv['sender']
+        if user_id not in participant_ids:
+            participant_ids.add(user_id)
+            last_message = Message.objects.filter(
+                Q(sender=request.user, recipient_id=user_id) |
+                Q(sender_id=user_id, recipient=request.user)
+            ).order_by('-timestamp').first()
+            
+            other_user = User.objects.get(id=user_id)
+            unread_count = Message.objects.filter(
+                sender_id=user_id,
+                recipient=request.user,
+                is_read=False
+            ).count()
+            
+            participants.append({
+                'id': user_id,
+                'username': other_user.username,
+                'full_name': other_user.get_full_name(),
+                'email': other_user.email,
+                'last_message': last_message,
+                'unread_count': unread_count
+            })
+    
+    # Sort participants by most recent message
+    participants.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else timezone.now(), reverse=True)
+    
+    # Get all users for new message modal
     all_users = User.objects.exclude(id=request.user.id).order_by('username')
     
     return render(request, 'dashboard/chat/index.html', {
