@@ -4,6 +4,8 @@ from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth.models import User
 from chat.models import Message
+from django.db.models import Max, Count
+from django.db.models.functions import Greatest
 
 
 # Create your views here.
@@ -16,9 +18,10 @@ def dashboard(request):
     ).count()
     
     # Get active conversations (users with recent messages)
-    active_conversations = Message.objects.filter(
-        Q(sender=request.user) | Q(recipient=request.user)
-    ).values('sender', 'recipient').distinct().count()
+    active_conversations = User.objects.filter(
+        Q(sent_messages__recipient=request.user) |
+        Q(received_messages__sender=request.user)
+    ).distinct().count()
     
     # Get total messages
     total_messages = Message.objects.filter(
@@ -34,7 +37,12 @@ def dashboard(request):
     recent_contacts = User.objects.filter(
         Q(sent_messages__recipient=request.user) |
         Q(received_messages__sender=request.user)
-    ).distinct().order_by('-sent_messages__timestamp', '-received_messages__timestamp')[:3]
+    ).annotate(
+        last_interaction=Greatest(
+            Max('sent_messages__timestamp'),
+            Max('received_messages__timestamp')
+        )
+    ).distinct().order_by('-last_interaction')[:3]
     
     context = {
         'unread_count': unread_count,
