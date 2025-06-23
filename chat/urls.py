@@ -13,4 +13,5 @@ urlpatterns = [
     path('updates/', views.get_message_updates, name='message_updates'),
     path('delete/<int:user_id>/', views.delete_conversation, name='delete_conversation'),
     path('mark-unread/<int:user_id>/', views.mark_as_unread, name='mark_as_unread'),
+    path('profile/<int:user_id>/', views.view_recipient_profile, name='view_recipient_profile'),
 ]
