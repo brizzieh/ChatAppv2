@@ -1,4 +1,5 @@
 {% extends "layouts/_base.html" %}
+{% load static %}
 {% block title %}My Profile{% endblock title %}
 
 {% block content %}
@@ -6,10 +7,12 @@
     <!-- Profile Header -->
     <div class="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 transition-all duration-300 hover:shadow-md">
         <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
-            <!-- Avatar with actual user image if available -->
+            <!-- Avatar with fallback -->
             <div class="relative">
-                {% if user.profile.avatar %}
-                <img src="{{ user.profile.avatar.url }}" class="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-4 border-white shadow-md">
+                {% if user.profile.avatar and user.profile.avatar.url %}
+                <img src="{{ user.profile.avatar.url }}" 
+                     class="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-4 border-white shadow-md"
+                     alt="{{ user.username }} avatar">
                 {% else %}
                 <div class="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 border-4 border-white shadow-md">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 sm:h-12 sm:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,6 +46,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 <span class="text-sm sm:text-base">Edit Profile</span>
+
             </a>
         </div>
     </div>
@@ -58,7 +62,7 @@
                 </div>
                 <div>
                     <p class="text-xs sm:text-sm text-gray-500">Total Messages</p>
-                    <h3 class="text-xl sm:text-2xl font-bold text-gray-800">1,248</h3>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-800">{{ total_messages }}</h3>
                 </div>
             </div>
         </div>
@@ -72,7 +76,7 @@
                 </div>
                 <div>
                     <p class="text-xs sm:text-sm text-gray-500">Contacts</p>
-                    <h3 class="text-xl sm:text-2xl font-bold text-gray-800">42</h3>
+                    <h3 class="text-xl sm:text-2xl font-bold text-gray-800">{{ active_conversations }}</h3>
                 </div>
             </div>
         </div>
@@ -180,7 +184,7 @@
             <h3 class="text-lg font-medium text-gray-900 mb-3 sm:mb-4">Recent Activity</h3>
             
             <div class="space-y-3">
-                {% for i in "12345"|make_list %}
+                {% for message in recent_messages %}
                 <div class="flex items-start pb-3 border-b border-gray-100 last:border-0">
                     <div class="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-2 sm:mr-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,9 +192,19 @@
                         </svg>
                     </div>
                     <div>
-                        <p class="text-sm sm:text-base text-gray-800">Sent message to User{{ i }}</p>
-                        <p class="text-xs text-gray-500">2{{ i }} minutes ago</p>
+                        <p class="text-sm sm:text-base text-gray-800">
+                            {% if message.sender == request.user %}
+                                Sent message to {{ message.recipient.username }}
+                            {% else %}
+                                Received message from {{ message.sender.username }}
+                            {% endif %}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ message.timestamp|timesince }} ago</p>
                     </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-gray-500">
+                    <p>No recent activity</p>
                 </div>
                 {% endfor %}
             </div>

@@ -86,7 +86,7 @@
                 <div class="flex items-center">
                     <img id="chat-user-avatar" src="" alt="" class="w-10 h-10 rounded-full mr-3">
                     <div>
-                        <h4 id="chat-user-name" class="font-medium text-gray-900 "></h4>
+                        <a href="" id="chat-user-name" class="font-medium text-gray-900 "></a>
                         <p id="chat-user-status" class="text-xs text-gray-500  flex items-center">
                             <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                             <span>Online</span>
@@ -704,6 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const displayName = data.other_user.full_name || data.other_user.username;
                 chatUserName.textContent = displayName;
                 chatUserAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random`;
+                chatUserName.href = `profile/${data.other_user.id}/`;
 
                 renderMessages(data.messages);
 

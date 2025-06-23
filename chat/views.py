@@ -322,3 +322,22 @@ def mark_as_unread(request, user_id):
         return JsonResponse({'status': 'success'})
     except User.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=404)
+
+@login_required
+def view_recipient_profile(request, user_id):
+    # Pata mwenye kukutumia message
+    recipient = get_object_or_404(User, id=user_id)
+    
+    # Pata mazungumzo kati yako na huyo mtu
+    conversation_messages = Message.objects.filter(
+        Q(sender=request.user, recipient=recipient) |
+        Q(sender=recipient, recipient=request.user)
+    ).order_by('-timestamp')[:5]  # Last 5 messages
+    
+    context = {
+        'recipient': recipient,
+        'conversation_messages': conversation_messages,
+        'total_messages': conversation_messages.count(),
+    }
+    
+    return render(request, 'dashboard/chat/profile.html', context)
