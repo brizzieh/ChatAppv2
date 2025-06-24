@@ -109,7 +109,6 @@ def get_unread_count(request):
 @require_http_methods(["POST"])
 def send_message(request):
     try:
-        # Use request.body directly to avoid JSON decoding issues with emojis
         try:
             data = json.loads(request.body.decode('utf-8'))
         except json.JSONDecodeError:
@@ -135,7 +134,7 @@ def send_message(request):
             'content': message.content,
             'is_read': message.is_read,
             'temp_id': data.get('temp_id', ''),
-        }, status=201, json_dumps_params={'ensure_ascii': False})  # This preserves emoji characters
+        }, status=201, json_dumps_params={'ensure_ascii': False})
     
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
