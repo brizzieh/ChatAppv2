@@ -11,7 +11,7 @@ import json
 
 User = get_user_model()
 
-@login_required
+
 @login_required
 def chat_view(request):
     # Get all unique conversation partners
@@ -109,7 +109,11 @@ def get_unread_count(request):
 @require_http_methods(["POST"])
 def send_message(request):
     try:
-        data = json.loads(request.body)
+        # Use request.body directly to avoid JSON decoding issues with emojis
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
         
         recipient = get_object_or_404(User, id=data.get('recipient_id'))
         content = data.get('content', '').strip()
@@ -117,6 +121,7 @@ def send_message(request):
         if not content:
             return JsonResponse({'status': 'error', 'message': 'Message cannot be empty'}, status=400)
         
+        # Create the message with proper encoding
         message = Message.objects.create(
             sender=request.user,
             recipient=recipient,
@@ -130,7 +135,7 @@ def send_message(request):
             'content': message.content,
             'is_read': message.is_read,
             'temp_id': data.get('temp_id', ''),
-        }, status=201)
+        }, status=201, json_dumps_params={'ensure_ascii': False})  # This preserves emoji characters
     
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
