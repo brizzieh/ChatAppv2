@@ -128,6 +128,7 @@ def send_message(request):
             'message_id': message.id,
             'timestamp': message.timestamp.isoformat(),
             'content': message.content,
+            'is_read': message.is_read,
             'temp_id': data.get('temp_id', ''),
         }, status=201)
     
@@ -160,7 +161,7 @@ def get_messages(request, user_id):
         'id': message.id,
         'sender_id': message.sender.id,
         'content': message.content,
-        'timestamp': message.timestamp.strftime("%b %d, %Y %I:%M %p"),
+        'timestamp': message.timestamp.isoformat(),
         'is_read': message.is_read,
         'is_me': message.sender == request.user
     } for message in messages]
@@ -274,7 +275,7 @@ def get_message_updates(request):
             'id': message.id,
             'sender_id': message.sender.id,
             'content': message.content,
-            'timestamp': message.timestamp.strftime("%b %d, %Y %I:%M %p"),
+            'timestamp': message.timestamp.isoformat(),
             'is_read': message.is_read,
             'is_me': message.sender == request.user
         } for message in messages]
