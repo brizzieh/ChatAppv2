@@ -203,12 +203,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (messageInput) messageInput.value = "";
     scrollToBottom();
 
+    // Create the request with proper headers
+    const headers = {
+      "Content-Type": "application/json; charset=utf-8",
+      "X-CSRFToken": getCookie("csrftoken"),
+    };
+
     fetch("send/", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
+      headers: headers,
       body: JSON.stringify({
         recipient_id: currentChatUserId,
         content: content,
@@ -224,7 +227,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!data || !data.message_id) {
           throw new Error("Server response missing required fields");
         }
-        handleMessageConfirmation(tempId, data.timestamp, data.message_id);
+        handleMessageConfirmation(
+          tempId,
+          data.timestamp,
+          data.message_id,
+          data.is_read
+        );
       })
       .catch((error) => {
         console.error("Error sending message:", error);
@@ -572,9 +580,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Escape HTML in message content to prevent XSS
       const safeContent =
-        typeof message.content === "string"
-          ? message.content.replace(/</g, "&lt;").replace(/>/g, "&gt;")
-          : "";
+        typeof message.content === "string" ? message.content : "";
 
       // Format timestamp safely
       const messageTime = formatTime(message.timestamp) || "";

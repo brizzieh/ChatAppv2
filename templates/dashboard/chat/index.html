@@ -129,7 +129,7 @@
                     <input id="message-input" type="text" placeholder="Type a message..." 
                            class="w-full  pl-4 pr-20 py-3 rounded-xl bg-white  border border-gray-300  focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
                     <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
-                        <button id="emoji-picker" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600  hover:bg-gray-100  transition-colors">
+                        <button id="emoji-picker" type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600  hover:bg-gray-100  transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -317,7 +317,25 @@
     .animate-pulse {
         animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
+
+    /* Add to your existing styles */
+    emoji-picker {
+        --num-columns: 8;
+        --emoji-size: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        emoji-picker {
+            --num-columns: 6;
+            --emoji-size: 1.8rem;
+            --category-emoji-size: 1.8rem;
+        }
+    }
 </style>
 
 <script src="{% static "js/chat.js" %}"></script>
+{% block scripts %}
+    {{ block.super }}
+    <script type="module" src="{% static 'js/emoji-picker.js' %}"></script>
+{% endblock %}
 {% endblock %}

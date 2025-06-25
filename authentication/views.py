@@ -4,6 +4,9 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 
 def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -33,6 +36,9 @@ def register_view(request):
     return render(request, 'auth/register.html')
 
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')

@@ -119,7 +119,7 @@ def edit_profile(request):
                 request.user.set_password(new_password1)
                 request.user.save()
                 update_session_auth_hash(request, request.user)
-                messages.success(request, 'Password changed successfully!')
+                messages.success(request, 'Password changed successfully!', 'Success')
                 return redirect('edit_profile')
     
     context = {
