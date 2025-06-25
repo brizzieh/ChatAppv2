@@ -99,7 +99,7 @@ def edit_profile(request):
                     request.user.email = new_email
             
             request.user.save()
-            messages.success(request, 'Profile updated successfully!','Success')
+            messages.success(request, 'Profile updated successfully!')
             return redirect('edit_profile')
         
         elif form_type == 'security':
