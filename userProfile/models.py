@@ -8,7 +8,7 @@ def user_avatar_path(instance, filename):
     return f'avatars/user_{instance.user.id}/{filename}'
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
     avatar = models.ImageField(upload_to=user_avatar_path, null=True, blank=True)
     bio = models.TextField(max_length=500, blank=True)
     
@@ -16,10 +16,10 @@ class Profile(models.Model):
         return f'{self.user.username} Profile'
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
+def manage_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+        if not hasattr(instance, 'profile'):
+            Profile.objects.create(user=instance)
+    else:
+        if hasattr(instance, 'profile'):
+            instance.profile.save()
