@@ -6,6 +6,7 @@ from django.db.models import Q, Max
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from .models import Message
+from contacts.models import Contact
 from django.utils import timezone
 import json
 
@@ -14,80 +15,50 @@ User = get_user_model()
 
 @login_required
 def chat_view(request):
-    # Get all unique conversation partners
-    sent_conversations = Message.objects.filter(
-        sender=request.user
-    ).values('recipient').annotate(
-        last_message=Max('timestamp')
-    )
+    # Get all contacts where the user is either requester or recipient and status is accepted
+    contacts = Contact.objects.filter(
+        (Q(requester=request.user) | Q(recipient=request.user)),
+        status='accepted'
+    ).select_related('requester', 'recipient')
     
-    received_conversations = Message.objects.filter(
-        recipient=request.user
-    ).values('sender').annotate(
-        last_message=Max('timestamp')
-    )
+    # Get the other user for each contact
+    contact_users = []
+    for contact in contacts:
+        if contact.requester == request.user:
+            contact_users.append(contact.recipient)
+        else:
+            contact_users.append(contact.requester)
     
-    # Combine and get unique participants
-    participant_ids = set()
+    # Get all unique conversation partners from contacts only
     participants = []
-    
-    # Process sent messages
-    for conv in sent_conversations:
-        user_id = conv['recipient']
-        if user_id not in participant_ids:
-            participant_ids.add(user_id)
-            last_message = Message.objects.filter(
-                Q(sender=request.user, recipient_id=user_id) |
-                Q(sender_id=user_id, recipient=request.user)
-            ).order_by('-timestamp').first()
-            
-            other_user = User.objects.get(id=user_id)
-            unread_count = Message.objects.filter(
-                sender_id=user_id,
-                recipient=request.user,
-                is_read=False
-            ).count()
-            
-            participants.append({
-                'id': user_id,
-                'username': other_user.username,
-                'full_name': other_user.get_full_name(),
-                'email': other_user.email,
-                'last_message': last_message,
-                'unread_count': unread_count
-            })
-    
-    # Process received messages
-    for conv in received_conversations:
-        user_id = conv['sender']
-        if user_id not in participant_ids:
-            participant_ids.add(user_id)
-            last_message = Message.objects.filter(
-                Q(sender=request.user, recipient_id=user_id) |
-                Q(sender_id=user_id, recipient=request.user)
-            ).order_by('-timestamp').first()
-            
-            other_user = User.objects.get(id=user_id)
-            unread_count = Message.objects.filter(
-                sender_id=user_id,
-                recipient=request.user,
-                is_read=False
-            ).count()
-            
-            participants.append({
-                'id': user_id,
-                'username': other_user.username,
-                'full_name': other_user.get_full_name(),
-                'email': other_user.email,
-                'last_message': last_message,
-                'unread_count': unread_count
-            })
+    for user in contact_users:
+        # Get the last message between current user and this contact
+        last_message = Message.objects.filter(
+            Q(sender=request.user, recipient=user) |
+            Q(sender=user, recipient=request.user)
+        ).order_by('-timestamp').first()
+        
+        # Get unread count
+        unread_count = Message.objects.filter(
+            sender=user,
+            recipient=request.user,
+            is_read=False
+        ).count()
+        
+        participants.append({
+            'id': user.id,
+            'username': user.username,
+            'full_name': user.get_full_name(),
+            'email': user.email,
+            'last_message': last_message,
+            'unread_count': unread_count
+        })
     
     # Sort participants by most recent message
     participants.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else timezone.now(), reverse=True)
     
-    # Get all users for new message modal
-    all_users = User.objects.exclude(id=request.user.id).order_by('username')
+    # Get all contact users for new message modal (only contacts)
+    all_users = contact_users
     
     return render(request, 'dashboard/chat/index.html', {
         'participants': participants,
@@ -120,7 +91,7 @@ def send_message(request):
         if not content:
             return JsonResponse({'status': 'error', 'message': 'Message cannot be empty'}, status=400)
         
-        # Create the message with proper encoding
+        # Create the message
         message = Message.objects.create(
             sender=request.user,
             recipient=recipient,
@@ -192,7 +163,7 @@ def search_users(request):
         Q(first_name__icontains=query) |
         Q(last_name__icontains=query) |
         Q(email__icontains=query)
-    ).exclude(id=request.user.id).distinct()[:10]  # Limit to 10 results
+    ).exclude(id=request.user.id).distinct()[:10]
     
     users_data = []
     for user in users:
@@ -212,7 +183,7 @@ def typing_indicator(request):
     recipient = User.objects.get(id=data['recipient_id'])
     is_typing = data['is_typing']
     
-    # In a real implementation, you would store this in cache/database
+    
     return JsonResponse({
         'status': 'success',
         'is_typing': is_typing,
@@ -225,7 +196,7 @@ def typing_status(request):
     user_id = request.GET.get('user_id')
     try:
         other_user = User.objects.get(id=user_id)
-        # In a real implementation, check if user is typing
+        
         return JsonResponse({
             'is_typing': False,
             'user_id': user_id
@@ -330,10 +301,9 @@ def mark_as_unread(request, user_id):
 
 @login_required
 def view_recipient_profile(request, user_id):
-    # Pata mwenye kukutumia message
+    
     recipient = get_object_or_404(User, id=user_id)
     
-    # Pata mazungumzo kati yako na huyo mtu
     conversation_messages = Message.objects.filter(
         Q(sender=request.user, recipient=recipient) |
         Q(sender=recipient, recipient=request.user)
