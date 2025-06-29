@@ -13,6 +13,7 @@ urlpatterns = [
     path('dashboard/', include('app.urls')),
     path('dashboard/profile/', include('userProfile.urls')),
     path('dashboard/chat/', include('chat.urls')),
+    path('dashboard/contact/', include('contacts.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
