@@ -107,4 +107,4 @@ def edit_profile(request):
     context = {
         'user': request.user,
     }
-    return render(request, 'dashboard/profile/edit.html', context)
+    return render(request, 'dashboard/profile/edit.html', context, content_type='text/html; charset=utf-8')
