@@ -7,7 +7,7 @@ from django.db.models import Max, Q
 from django.db.models.functions import Greatest
 from django.utils import timezone
 from .models import Profile
-from chat.models import Message
+from contacts.models import Contact
 import os
 
 
@@ -15,47 +15,29 @@ import os
 
 @login_required
 def user_profile(request):
-    # Get unread message count
-    unread_count = Message.objects.filter(
-        recipient=request.user,
-        is_read=False
-    ).count()
+    # Get active contacts (where status is 'accepted' and user is either requester or recipient)
+    active_contacts = Contact.objects.filter(
+        (Q(requester=request.user) | Q(recipient=request.user)),
+        status='accepted'
+    ).select_related('requester', 'recipient')
     
-    # Get active conversations (users with recent messages)
-    active_conversations = User.objects.filter(
-        Q(sent_messages__recipient=request.user) |
-        Q(received_messages__sender=request.user)
-    ).distinct().count()
+    # Extract the other user for each contact
+    contact_users = []
+    for contact in active_contacts:
+        if contact.requester == request.user:
+            contact_users.append(contact.recipient)
+        else:
+            contact_users.append(contact.requester)
     
-    # Get total messages
-    total_messages = Message.objects.filter(
-        Q(sender=request.user) | Q(recipient=request.user)
-    ).count()
-    
-    # Get recent messages (last 5)
-    recent_messages = Message.objects.filter(
-        Q(sender=request.user) | Q(recipient=request.user)
-    ).order_by('-timestamp')[:5]
-    
-    # Get recent contacts (users with most recent messages)
-    recent_contacts = User.objects.filter(
-        Q(sent_messages__recipient=request.user) |
-        Q(received_messages__sender=request.user)
-    ).annotate(
-        last_interaction=Greatest(
-            Max('sent_messages__timestamp'),
-            Max('received_messages__timestamp')
-        )
-    ).distinct().order_by('-last_interaction')[:3]
+    # Get other profile data
+    total_messages = request.user.sent_messages.count() + request.user.received_messages.count()
+    recent_messages = request.user.received_messages.order_by('-timestamp')[:5]
     
     context = {
         'user': request.user,
-        'unread_count': unread_count,
-        'active_conversations': active_conversations,
+        'active_contacts': contact_users,
         'total_messages': total_messages,
         'recent_messages': recent_messages,
-        'recent_contacts': recent_contacts,
-        'current_date': timezone.now(),
     }
     
     return render(request, 'dashboard/profile/index.html', context)

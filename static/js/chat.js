@@ -15,6 +15,30 @@ document.addEventListener("DOMContentLoaded", function () {
     return cookieValue;
   }
 
+  const textarea = document.getElementById('message-input');
+    
+  // Auto-expand functionality
+  textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+      
+      // Limit to max height (6 lines approx)
+      if (this.scrollHeight > 150) { // ~6 lines
+          this.style.overflowY = 'auto';
+      } else {
+          this.style.overflowY = 'hidden';
+      }
+  });
+  
+  // Handle Enter key for new lines and submission
+  textarea.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.getElementById('send-message').click();
+      }
+  });
+
+
   // DOM elements
   const newMessageBtn = document.getElementById("new-message-btn");
   const newMessageModal = document.getElementById("new-message-modal");
