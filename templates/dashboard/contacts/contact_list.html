@@ -17,7 +17,7 @@
                 
                 <!-- Add Contact Button -->
                 <button onclick="openModal()" 
-                        class="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-all duration-300 shadow hover:shadow-md">
+                        class="flex items-center space-x-2 px-6 py-3 bg-blue-500  text-white rounded-lg transition-all duration-300 shadow hover:shadow-md">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
                     </svg>
@@ -108,7 +108,7 @@
                 {% for user in contact_users %}
                 <div class="group bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden">
                     <!-- Gradient background overlay -->
-                    <div class="absolute inset-0 bg-gradient-to-br from-blue-50/20 to-purple-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="absolute inset-0 bg--blue-50/20  opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     
                     <!-- Accessible Delete Button -->
                     <button onclick="removeContact({{ user.id }})" 
@@ -145,14 +145,14 @@
                 </div>
                 {% empty %}
                 <div class="col-span-full text-center py-16">
-                    <div class="mx-auto w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-6">
+                    <div class="mx-auto w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
                     <h3 class="text-xl font-medium text-gray-700">No contacts yet</h3>
                     <p class="text-gray-500 mt-2">Start by adding your first contact</p>
-                    <button onclick="openModal()" class="mt-6 px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition shadow-md">
+                    <button onclick="openModal()" class="mt-6 px-6 py-2 bg-blue-500 hover:blue-600 text-white rounded-lg transition shadow-md">
                         Add First Contact
                     </button>
                 </div>
