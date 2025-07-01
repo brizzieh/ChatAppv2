@@ -32,26 +32,26 @@
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Pending Requests</h2>
             <div class="space-y-3">
                 {% for request in pending_requests %}
-                <div class="flex items-center justify-between bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                    <div class="flex items-center space-x-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 sm:p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <div class="flex items-center space-x-3 mb-3 sm:mb-0">
                         <img src="https://ui-avatars.com/api/?name={{ request.requester.get_full_name|default:request.requester.username }}&background=random&color=fff&size=64"
-                             class="w-10 h-10 rounded-full">
+                            class="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
                         <div>
-                            <h3 class="font-medium">{{ request.requester.get_full_name|default:request.requester.username }}</h3>
-                            <p class="text-sm text-gray-500">Sent {{ request.created_at|timesince }} ago</p>
+                            <h3 class="font-medium text-sm sm:text-base">{{ request.requester.get_full_name|default:request.requester.username }}</h3>
+                            <p class="text-xs sm:text-sm text-gray-500">Sent {{ request.created_at|timesince }} ago</p>
                         </div>
                     </div>
-                    <div class="flex space-x-2">
+                    <div class="flex space-x-2 self-end sm:self-auto">
                         <button onclick="respondToRequest({{ request.id }}, 'accept')" 
-                                class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm flex items-center transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                class="px-2 py-1 sm:px-3 sm:py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs sm:text-sm flex items-center transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 sm:h-4 sm:w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
                             Accept
                         </button>
                         <button onclick="respondToRequest({{ request.id }}, 'reject')" 
-                                class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm flex items-center transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                class="px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs sm:text-sm flex items-center transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 sm:h-4 sm:w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                             Reject
@@ -71,8 +71,11 @@
                 {% for request in sent_requests %}
                 <div class="flex items-center justify-between bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex items-center space-x-3">
-                        <img src="https://ui-avatars.com/api/?name={{ request.recipient.get_full_name|default:request.recipient.username }}&background=random&color=fff&size=64"
-                             class="w-10 h-10 rounded-full">
+                        {% comment %} <img src="https://ui-avatars.com/api/?name={{ request.recipient.get_full_name|default:request.recipient.username }}&background=random&color=fff&size=64"
+                             class="w-10 h-10 rounded-full"> {% endcomment %}
+                             <img src="{% if request.recipient.profile.avatar %}{{ request.recipient.profile.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ request.recipient.get_full_name|default:request.recipient.username }}&background=random&color=fff&size=128{% endif %}" 
+                                    alt="{{ user.username }}"
+                                    class="w-10 h-10 rounded-full">
                         <div>
                             <h3 class="font-medium">{{ request.recipient.get_full_name|default:request.recipient.username }}</h3>
                             <p class="text-sm text-gray-500">Sent {{ request.created_at|timesince }} ago</p>
