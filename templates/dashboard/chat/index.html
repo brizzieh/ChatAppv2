@@ -82,7 +82,7 @@
                     <div class="flex items-center">
                         <div class="relative mr-3">
                             <div class="absolute inset-0 bg-blue-500/10 rounded-full blur-sm animate-pulse"></div>
-                            <img id="chat-user-avatar" src="" alt="" class="relative z-10 w-12 h-12 rounded-full border-2 border-white/80">
+                            <img id="chat-user-avatar" src="" alt="" class="relative z-10 w-12 h-12 rounded-full border-2 object-cover border-white/80">
                         </div>
                         <div>
                             <a href="" id="chat-user-name" class="font-medium text-gray-900"></a>
@@ -170,7 +170,7 @@
                 <div class="relative mr-3">
                     <div class="absolute inset-0 bg-blue-500/10 rounded-full blur-sm animate-pulse"></div>
                     <img src="{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=random&color=fff&size=64{% endif %}" 
-                         class="relative z-10 w-10 h-10 rounded-full border-2 border-white/80">
+                         class="relative z-10 w-10 h-10 rounded-full border-2 object-cover border-white/80">
                     <span class="absolute bottom-0 right-0 z-20 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white/90"></span>
                 </div>
                 <div class="flex-1 min-w-0">
