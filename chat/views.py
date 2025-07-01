@@ -15,13 +15,11 @@ User = get_user_model()
 
 @login_required
 def chat_view(request):
-    # Get all contacts where the user is either requester or recipient and status is accepted
     contacts = Contact.objects.filter(
         (Q(requester=request.user) | Q(recipient=request.user)),
         status='accepted'
     ).select_related('requester', 'recipient')
     
-    # Get the other user for each contact
     contact_users = []
     for contact in contacts:
         if contact.requester == request.user:
@@ -29,21 +27,27 @@ def chat_view(request):
         else:
             contact_users.append(contact.requester)
     
-    # Get all unique conversation partners from contacts only
     participants = []
     for user in contact_users:
-        # Get the last message between current user and this contact
         last_message = Message.objects.filter(
             Q(sender=request.user, recipient=user) |
             Q(sender=user, recipient=request.user)
         ).order_by('-timestamp').first()
         
-        # Get unread count
         unread_count = Message.objects.filter(
             sender=user,
             recipient=request.user,
             is_read=False
         ).count()
+        
+        # Safe avatar URL handling
+        avatar_url = None
+        if hasattr(user, 'profile') and hasattr(user.profile, 'avatar') and user.profile.avatar:
+            try:
+                avatar_url = user.profile.avatar.url
+            except ValueError:
+                # Handle case where avatar exists but has no file
+                avatar_url = None
         
         participants.append({
             'id': user.id,
@@ -51,8 +55,16 @@ def chat_view(request):
             'full_name': user.get_full_name(),
             'email': user.email,
             'last_message': last_message,
-            'unread_count': unread_count
+            'unread_count': unread_count,
+            'avatar_url': avatar_url 
         })
+    
+    participants.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else timezone.now(), reverse=True)
+    
+    return render(request, 'dashboard/chat/index.html', {
+        'participants': participants,
+        'all_users': contact_users
+    })
     
     # Sort participants by most recent message
     participants.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else timezone.now(), reverse=True)
@@ -147,6 +159,9 @@ def get_messages(request, user_id):
             'id': other_user.id,
             'username': other_user.username,
             'full_name': other_user.get_full_name(),
+            'profile': {
+                'avatar': other_user.profile.avatar.url if hasattr(other_user, 'profile') and other_user.profile.avatar else None
+            }
         }
     })
 
