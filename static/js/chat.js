@@ -442,57 +442,67 @@ document.addEventListener("DOMContentLoaded", function () {
   function fetchMessages(userId) {
     // Show loading state
     messagesContainer.innerHTML = `
-            <div class="text-center py-8">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
-                <p class="mt-2 text-gray-500 ">Loading messages...</p>
-            </div>
-        `;
+        <div class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+            <p class="mt-2 text-gray-500">Loading messages...</p>
+        </div>
+    `;
 
     fetch(`get/${userId}/`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            `Failed to load messages (status: ${response.status})`
-          );
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Failed to load messages (status: ${response.status})`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
 
-        currentChatUserId = data.other_user.id;
-        const displayName =
-          data.other_user.full_name || data.other_user.username;
-        chatUserName.textContent = displayName;
-        chatUserAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          displayName
-        )}&background=random`;
-        chatUserName.href = `profile/${data.other_user.id}/`;
+            currentChatUserId = data.other_user.id;
+            const displayName = data.other_user.full_name || data.other_user.username;
+            chatUserName.textContent = displayName;
+            
+            // Safe avatar handling - use real avatar if available, otherwise fallback
+            const avatarUrl = data.other_user.profile?.avatar || 
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&color=fff`;
+            chatUserAvatar.src = avatarUrl;
+            
+            // Add error handling in case the avatar fails to load
+            chatUserAvatar.onerror = () => {
+                chatUserAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&color=fff`;
+                chatUserAvatar.onerror = null; // Prevent infinite loop
+            };
+            
+            chatUserName.href = `profile/${data.other_user.id}/`;
 
-        renderMessages(data.messages);
+            renderMessages(data.messages);
 
-        // Update last message ID
-        if (data.messages.length > 0) {
-          lastMessageId = data.messages[data.messages.length - 1].id;
-        }
+            // Update last message ID
+            if (data.messages.length > 0) {
+                lastMessageId = data.messages[data.messages.length - 1].id;
+            }
 
-        // Start checking for new messages
-        startMessageUpdates();
-      })
-      .catch((error) => {
-        console.error("Fetch error:", error);
-        messagesContainer.innerHTML = `
-                    <div class="text-center py-8 text-red-500 ">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <p class="font-medium">${error.message}</p>
-                        <p class="text-sm mt-2">Failed to load messages. Please try again.</p>
-                    </div>
-                `;
-      });
+            // Start checking for new messages
+            startMessageUpdates();
+          })
+          .catch((error) => {
+              console.error("Fetch error:", error);
+              messagesContainer.innerHTML = `
+                  <div class="text-center py-8 text-red-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <p class="font-medium">${error.message}</p>
+                      <p class="text-sm mt-2">Failed to load messages. Please try again.</p>
+                      <button onclick="fetchMessages(${userId})" 
+                              class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                          Retry
+                      </button>
+                  </div>
+              `;
+          });
   }
 
   // Render messages
