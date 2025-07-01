@@ -121,8 +121,8 @@
                 {% for contact in active_contacts %}
                 <div class="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-md border border-white/30 hover:shadow-lg transition-all transform hover:-translate-y-1">
                     <div class="flex items-center space-x-3">
-                        <img src="https://ui-avatars.com/api/?name={{ contact.get_full_name|default:contact.username }}&background=random&color=fff&size=128"
-                             class="w-12 h-12 rounded-full border-2 border-white/80 shadow">
+                        <img src="{% if contact.profile.avatar %}{{ contact.profile.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ contact.get_full_name|default:contact.username }}&background=random&color=fff&size=128{% endif %}"
+                             class="w-12 h-12 rounded-full border-2 object-cover border-white/80 shadow">
                         <div>
                             <h3 class="font-medium text-gray-800">{{ contact.get_full_name|default:contact.username }}</h3>
                             <p class="text-sm text-blue-600">@{{ contact.username|lower }}</p>
