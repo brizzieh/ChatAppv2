@@ -214,7 +214,7 @@
                                 <div class="user-item flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
                                      data-user-id="{{ user.id }}"
                                      onclick="selectUser(this, '{{ user.get_full_name|default:user.username }}', '{{ user.email }}')">
-                                    <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=random&color=fff&size=64"
+                                    <img src="{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.username }}&background=random&color=fff&size=64{% endif %}"
                                          class="w-10 h-10 rounded-full mr-3">
                                     <div class="flex-1 min-w-0">
                                         <div class="font-medium text-gray-800 truncate">{{ user.get_full_name|default:user.username }}</div>
@@ -276,12 +276,13 @@ function selectUser(element, name, email) {
     const confirmationSection = document.getElementById('selected-user-confirmation');
     const userListContainer = document.getElementById('user-list-container');
     const selectedUserId = element.getAttribute('data-user-id');
+    const avatarUrl = element.querySelector('img').src;
     
     // Update confirmation section
     document.getElementById('selected-user-id').value = selectedUserId;
     document.getElementById('selected-user-name').textContent = name;
     document.getElementById('selected-user-email').textContent = email;
-    document.getElementById('selected-user-avatar').src = `https://ui-avatars.com/api/?name=${name}&background=random&color=fff&size=64`;
+    document.getElementById('selected-user-avatar').src = avatarUrl;
     
     // Show confirmation, hide user list
     confirmationSection.classList.remove('hidden');
