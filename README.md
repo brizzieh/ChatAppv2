@@ -132,5 +132,5 @@ MIT License – see `LICENSE` file for details.
 
 ## 📬 Contact
 
-Made with ❤️ by [Your Name](mailto:your.email@example.com)  
-GitHub: [@yourusername](https://github.com/yourusername)
+Made with ❤️ by Brighton Brown (mailto:brizziehh@gmail.com)  
+GitHub: [@brizzieh](https://github.com/brizzieh)
