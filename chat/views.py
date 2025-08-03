@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
@@ -65,17 +65,7 @@ def chat_view(request):
         'participants': participants,
         'all_users': contact_users
     })
-    
-    # Sort participants by most recent message
-    participants.sort(key=lambda x: x['last_message'].timestamp if x['last_message'] else timezone.now(), reverse=True)
-    
-    # Get all contact users for new message modal (only contacts)
-    all_users = contact_users
-    
-    return render(request, 'dashboard/chat/index.html', {
-        'participants': participants,
-        'all_users': all_users
-    })
+
 
 @login_required
 def get_unread_count(request):
